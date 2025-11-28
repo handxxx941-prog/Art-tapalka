@@ -1,0 +1,7 @@
+{
+  "url": "https://handxxx941-prog.github.io/art-tapalka/",
+  "name": "Valgar ART Token",
+  "iconUrl": "https://ТВОЙ_ЛОГИН.github.io/art-tapalka/valgar.png",
+  "termsOfUseUrl": "https://example.com/terms",
+  "privacyPolicyUrl": "https://example.com/privacy"
+}

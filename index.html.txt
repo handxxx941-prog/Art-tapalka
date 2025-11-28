@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Valgar ART Token</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://unpkg.com/@tonconnect/ui@2.0.0/dist/tonconnect-ui.min.js"></script>
+  <style>
+    body { margin:0; background: #000; color: white; font-family: Arial; text-align: center; overflow: hidden; }
+    .balance { font-size: 40px; font-weight: bold; margin: 30px 0; color: #ffd700; text-shadow: 0 0 20px #ff5500; }
+    #valgar { width: 90%; max-width: 380px; margin: 20px auto; border-radius: 20px; box-shadow: 0 0 80px #ff5500; }
+    .striking { animation: strike 0.6s ease; }
+    @keyframes strike { 0%{transform:rotate(0)} 30%{transform:rotate(28deg) scale(1.12)} 100%{transform:rotate(0)} }
+    .coin { position: absolute; font-size: 50px; pointer-events: none; z-index: 99; animation: fly 1.3s ease-out forwards; }
+    @keyframes fly { to { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 0; } }
+    .plus { position: absolute; font-size: 48px; font-weight: bold; color: #ffd700; text-shadow: 0 0 20px #ff0000; pointer-events: none; animation: up 1s forwards; }
+    @keyframes up { to { transform: translateY(-200px); opacity: 0; } }
+    button { background: linear-gradient(#ff5500, #ffd700); color: #000; padding: 18px 36px; border-radius: 50px; font-size: 20px; margin: 10px; font-weight: bold; border: none; }
+    .energy-bar { height: 28px; background: #111; border-radius: 14px; overflow: hidden; margin: 20px; border: 3px solid #ffd700; }
+    .energy-fill { height: 100%; background: linear-gradient(90deg, #ff0000, #ffd700); transition: width 0.3s; }
+  </style>
+</head>
+<body>
+  <div class="balance" id="balance">0 ART</div>
+  <img src="valgar.png" id="valgar" alt="Valgar">
+  <div style="margin:20px 0">
+    <div>Энергия <span id="energyText">3000</span>/3000</div>
+    <div class="energy-bar"><div class="energy-fill" id="energyFill"></div></div>
+  </div>
+  <button id="connectWallet">Подключить TON</button>
+  <button id="claimBtn">Claim (скоро TGE)</button>
+  <button id="dailyCombo">Daily Combo (+5M)</button>
+
+  <script>
+    const tg = window.Telegram.WebApp; tg.ready(); tg.expand();
+    const userId = tg.initDataUnsafe.user?.id || 'test';
+    let data = JSON.parse(localStorage.getItem('valgar_' + userId)) || {points: 0, energy: 3000, lastDaily: 0};
+
+    const tonConnectUI = new TonConnectUI({manifestUrl: location.origin + '/tonconnect-manifest.json'});
+
+    function save() {
+      localStorage.setItem('valgar_' + userId, JSON.stringify(data));
+      document.getElementById('balance').textContent = Math.floor(data.points).toLocaleString() + ' ART';
+      document.getElementById('energyText').textContent = data.energy + '/3000';
+      document.getElementById('energyFill').style.width = (data.energy/3000*100) + '%';
+    }
+    save();
+
+    document.getElementById('valgar').addEventListener('touchstart', function(e) {
+      if (data.energy <= 0) return;
+      data.energy -= 1; data.points += 1; save();
+
+      this.classList.add('striking');
+      setTimeout(() => this.classList.remove('striking'), 600);
+
+      const x = e.touches[0].clientX;
+      const y = e.touches[0].clientY;
+
+      // +1 ART
+      let plus = document.createElement('div');
+      plus.textContent = '+1 ART';
+      plus.classList.add('plus');
+      plus.style.left = (x-60) + 'px';
+      plus.style.top = (y-100) + 'px';
+      document.body.appendChild(plus);
+      setTimeout(() => plus.remove(), 1000);
+
+      // 14 разлетающихся монеток
+      for(let i=0; i<14; i++) {
+        let c = document.createElement('div');
+        c.textContent = '🪙';
+        c.classList.add('coin');
+        let dx = (Math.random()-0.5)*400;
+        let dy = -200 - Math.random()*200;
+        let rot = Math.random()*720 - 360;
+        c.style.setProperty('--dx', dx+'px');
+        c.style.setProperty('--dy', dy+'px');
+        c.style.setProperty('--rot', rot+'deg');
+        c.style.left = (x-30)+'px';
+        c.style.top = (y-30)+'px';
+        document.body.appendChild(c);
+        setTimeout(() => c.remove(), 1300);
+      }
+
+      tg.HapticFeedback.impactOccurred('heavy');
+    });
+
+    setInterval(() => { if(data.energy < 3000) {data.energy +=1; save();} }, 1000);
+
+    document.getElementById('dailyCombo').onclick = () => {
+      const today = Math.floor(Date.now()/86400000);
+      if(data.lastDaily !== today) {
+        data.points += 5000000;
+        data.lastDaily = today;
+        alert('Валгар дал силу! +5.000.000 ART');
+        save();
+      } else alert('Уже забрал сегодня!');
+    };
+
+    document.getElementById('connectWallet').onclick = () => tonConnectUI.openModal();
+    document.getElementById('claimBtn').onclick = () => alert('Ты в ферминге! ' + data.points.toLocaleString() + ' ART будет на TGE');
+  </script>
+</body>
+</html>
