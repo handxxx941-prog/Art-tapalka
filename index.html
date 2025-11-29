@@ -3,72 +3,127 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Valgar ART Token</title>
+  <title>ART Token - Valgar</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://unpkg.com/@tonconnect/ui@2.0.0/dist/tonconnect-ui.min.js"></script>
   <style>
-    body { margin:0; background:#000; color:white; text-align:center; overflow:hidden; }
-    .balance { font-size:42px; font-weight:bold; margin:30px 0; color:#ffd700; text-shadow:0 0 30px #ff5500; }
-    #tapArea { width:100%; height:70vh; background:url('valgar.jpg') center/contain no-repeat; background-size:contain; touch-action:manipulation; }
-    .plus { position:absolute; font-size:80px; font-weight:bold; color:#ffd700; text-shadow:0 0 30px #ff0000; pointer-events:none; z-index:999; left:50%; top:50%; transform:translate(-50%,-50%); animation:up 1s forwards; }
-    @keyframes up { to { transform:translate(-50%,-300px) scale(2); opacity:0; } }
-    button { background:#ffd700; color:#000; padding:18px 36px; border-radius:50px; font-size:20px; margin:10px; font-weight:bold; }
-    .energy-bar { height:28px; background:#111; border-radius:14px; overflow:hidden; margin:20px; border:3px solid #ffd700; }
-    .energy-fill { height:100%; background:linear-gradient(90deg,#ff0000,#ffd700); transition:width 0.3s; }
+    body { margin:0; background: url('background.jpg') center/cover no-repeat fixed, #000; color: white; font-family: Arial; overflow: hidden; }
+    .balance { font-size: 36px; font-weight: bold; margin: 20px 0; color: #ffd700; text-shadow: 0 0 20px #ff5500; }
+    
+    /* Персонаж Валгар */
+    #valgar { width: 90%; max-width: 500px; margin: 0 auto; pointer-events: none; animation: breathe 4s infinite; }
+    @keyframes breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+    .attack { animation: strike 0.6s ease-in-out !important; }
+    @keyframes strike { 0% { transform: translateY(0) rotate(0); } 40% { transform: translateY(-30px) rotate(-45deg); } 100% { transform: translateY(0) rotate(0); } }
+
+    /* Круглый токен */
+    #tokenCircle { width: 260px; height: 260px; margin: 20px auto; background: radial-gradient(#ffd700, #ff8c00); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 80px; box-shadow: 0 0 80px #ffd700; user-select: none; }
+    #tokenCircle:active { transform: scale(0.92); }
+
+    /* Монетки */
+    .coin { position: absolute; font-size: 50px; pointer-events: none; z-index: 99; animation: fly 1.4s ease-out forwards; }
+    @keyframes fly { to { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 0; } }
+
+    .energy-bar { height: 26px; background: #111; border-radius: 13px; overflow: hidden; margin: 20px; border: 2px solid #ffd700; }
+    .energy-fill { height: 100%; background: linear-gradient(90deg, #ff0000, #ffd700); transition: width 0.3s; }
+
+    /* Нижние вкладки */
+    .tabs { position: fixed; bottom: 0; width: 100%; background: rgba(0,0,0,0.8); display: flex; padding: 10px 0; backdrop-filter: blur(10px); }
+    .tab { flex: 1; text-align: center; padding: 12px; font-size: 14px; color: #aaa; transition: 0.3s; }
+    .tab.active { color: #ffd700; text-shadow: 0 0 10px #ff5500; }
+    .tab:active { transform: scale(0.95); }
+
+    .page { display: none; }
+    .page.active { display: block; }
   </style>
 </head>
 <body>
-  <div class="balance" id="balance">0 ART</div>
-  
-  <div id="tapArea"></div>
-  
-  <div style="margin:20px 0">
-    <div>Энергия <span id="energyText">5000</span>/5000</div>
-    <div class="energy-bar"><div class="energy-fill" id="energyFill"></div></div>
+
+  <div id="tapPage" class="page active">
+    <div class="balance" id="balance">0.00 ART</div>
+    <img src="valgar.jpg" id="valgar" alt="Valgar">
+    <div id="tokenCircle">ART</div>
+    
+    <div style="margin:20px 0">
+      <div>Энергия <span id="energyText">5000</span>/5000</div>
+      <div class="energy-bar"><div class="energy-fill" id="energyFill"></div></div>
+    </div>
   </div>
-  
-  <button onclick="testAdd()">ТЕСТ +1000 ART</button>
-  <button id="dailyCombo">Daily Combo (+10M)</button>
+
+  <div id="shopPage" class="page">
+    <h2 style="margin-top:100px">Магазин бустов</h2>
+    <p style="font-size:18px; color:#aaa">Скоро здесь будут бусты, мульти-тапы, пассивка и т.д. 🔥</p>
+  </div>
+
+  <div id="tasksPage" class="page">
+    <h2 style="margin-top:100px">Задания</h2>
+    <p style="font-size:18px; color:#aaa">Ежедневные задания, шифры, комбо — скоро здесь!</p>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="openTab('tapPage')">⚔️ Tap</div>
+    <div class="tab" onclick="openTab('shopPage')">🏪 Магазин</div>
+    <div class="tab" onclick="openTab('tasksPage')">📜 Задания</div>
+  </div>
 
   <script>
     const tg = window.Telegram.WebApp; tg.ready(); tg.expand();
     const userId = tg.initDataUnsafe.user?.id || 'test';
-    let data = JSON.parse(localStorage.getItem('valgar_art_' + userId)) || {points: 0, energy: 5000};
+    let data = JSON.parse(localStorage.getItem('art_valgar_' + userId)) || {points: 0, energy: 5000};
 
     function save() {
-      localStorage.setItem('valgar_art_' + userId, JSON.stringify(data));
-      document.getElementById('balance').textContent = data.points.toLocaleString('ru-RU') + ' ART';
+      localStorage.setItem('art_valgar_' + userId, JSON.stringify(data));
+      document.getElementById('balance').textContent = data.points.toFixed(2) + ' ART';
       document.getElementById('energyText').textContent = data.energy + '/5000';
       document.getElementById('energyFill').style.width = (data.energy/5000*100) + '%';
     }
     save();
 
-    // ТЕСТОВАЯ КНОПКА — нажми её, если тап ещё не работает (чтобы убедиться, что баланс вообще сохраняется)
-    function testAdd() {
-      data.points += 1000;
-      save();
-      alert('Тест прошёл — баланс растёт!');
+    // Переключение вкладок
+    function openTab(pageId) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.getElementById(pageId).classList.add('active');
+      document.querySelector(`.tab[onclick="openTab('${pageId}')"]`).classList.add('active');
     }
 
-    // Главное — супернадёжный тап (работает даже на самом глючном телефоне)
-    const tapArea = document.getElementById('tapArea');
-    tapArea.addEventListener('click', tap);
-    tapArea.addEventListener('touchstart', tap);
-    tapArea.addEventListener('pointerdown', tap);
+    // Тап по токену
+    document.getElementById('tokenCircle').addEventListener('touchstart', tap);
+    document.getElementById('tokenCircle').addEventListener('click', tap);
 
     function tap(e) {
-      if (e) e.preventDefault();
+      e.preventDefault();
       if (data.energy <= 0) return tg.HapticFeedback.notificationOccurred('error');
 
       data.energy -= 1;
-      data.points += 1;
+      data.points += 0.01;
       save();
 
-      // Огромный +1 ART по центру экрана
-      let plus = document.createElement('div');
-      plus.textContent = '+1 ART';
-      plus.classList.add('plus');
-      document.body.appendChild(plus);
-      setTimeout(() => plus.remove(), 1000);
+      // Удар Валгара
+      const valgar = document.getElementById('valgar');
+      valgar.classList.add('attack');
+      setTimeout(() => valgar.classList.remove('attack'), 600);
+
+      // 25 монеток от центра токена
+      const rect = e.target.getBoundingClientRect();
+      const x = rect.left + rect.width / 2;
+      const y = rect.top + rect.height / 2;
+
+      for(let i = 0; i < 25; i++) {
+        let c = document.createElement('div');
+        c.textContent = '🪙';
+        c.classList.add('coin');
+        let dx = (Math.random() - 0.5) * 600;
+        let dy = (Math.random() - 0.5) * 600;
+        let rot = Math.random() * 720 - 360;
+        c.style.setProperty('--dx', dx + 'px');
+        c.style.setProperty('--dy', dy + 'px');
+        c.style.setProperty('--rot', rot + 'deg');
+        c.style.left = (x - 30) + 'px';
+        c.style.top = (y - 30) + 'px';
+        document.body.appendChild(c);
+        setTimeout(() => c.remove(), 1400);
+      }
 
       tg.HapticFeedback.impactOccurred('heavy');
     }
@@ -79,18 +134,7 @@
         data.energy += 1;
         save();
       }
-    }, 800); // чуть быстрее для теста
-
-    // Daily Combo
-    document.getElementById('dailyCombo').onclick = () => {
-      const today = Math.floor(Date.now()/86400000);
-      if (!localStorage.getItem('daily_' + today)) {
-        data.points += 10000000;
-        localStorage.setItem('daily_' + today, 'true');
-        alert('Валгар дал +10.000.000 ART 🔥');
-        save();
-      } else alert('Уже забрал сегодня!');
-    };
+    }, 1000);
   </script>
 </body>
 </html>
