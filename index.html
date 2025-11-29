@@ -10,14 +10,8 @@
     body { margin:0; background: url('background.jpg') center/cover no-repeat fixed, #000; color: white; font-family: Arial; overflow: hidden; }
     .balance { font-size: 36px; font-weight: bold; margin: 20px 0; color: #ffd700; text-shadow: 0 0 20px #ff5500; }
     
-    /* Персонаж Валгар */
-    #valgar { width: 90%; max-width: 500px; margin: 0 auto; pointer-events: none; animation: breathe 4s infinite; }
-    @keyframes breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.03); } }
-    .attack { animation: strike 0.6s ease-in-out !important; }
-    @keyframes strike { 0% { transform: translateY(0) rotate(0); } 40% { transform: translateY(-30px) rotate(-45deg); } 100% { transform: translateY(0) rotate(0); } }
-
     /* Круглый токен */
-    #tokenCircle { width: 260px; height: 260px; margin: 20px auto; background: radial-gradient(#ffd700, #ff8c00); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 80px; box-shadow: 0 0 80px #ffd700; user-select: none; }
+    #tokenCircle { width: 160px; height: 160px; margin: 10px auto; background: radial-gradient(#ffd700, #ff8c00); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; box-shadow: 0 0 80px #ffd700; user-select: none; }
     #tokenCircle:active { transform: scale(0.92); }
 
     /* Монетки */
@@ -41,23 +35,22 @@
 
   <div id="tapPage" class="page active">
     <div class="balance" id="balance">0.00 ART</div>
-    <img src="valgar.png" id="valgar" alt="Valgar">
     <div id="tokenCircle">ART</div>
     
     <div style="margin:20px 0">
-      <div>Энергия <span id="energyText">5000</div>
+      <div>Energy <span id="energyText">5000</div>
       <div class="energy-bar"><div class="energy-fill" id="energyFill"></div></div>
     </div>
   </div>
 
   <div id="shopPage" class="page">
-    <h2 style="margin-top:100px">Магазин бустов</h2>
-    <p style="font-size:18px; color:#aaa">Скоро здесь будут бусты, мульти-тапы, пассивка и т.д. 🔥</p>
+    <h2 style="margin-top:100px">Boost Shop</h2>
+    <p style="font-size:18px; color:#aaa">Soon there will be boosts, multi-taps, passives, etc. 🔥</p>
   </div>
 
   <div id="tasksPage" class="page">
-    <h2 style="margin-top:100px">Задания</h2>
-    <p style="font-size:18px; color:#aaa">Ежедневные задания, шифры, комбо — скоро здесь!</p>
+    <h2 style="margin-top:100px">Tasks</h2>
+    <p style="font-size:18px; color:#aaa">Daily quests, ciphers, combos – coming soon!</p>
   </div>
 
   <div class="tabs">
@@ -99,11 +92,6 @@
       data.points += 0.01;
       save();
 
-      // Удар Валгара
-      const valgar = document.getElementById('valgar');
-      valgar.classList.add('attack');
-      setTimeout(() => valgar.classList.remove('attack'), 600);
-
       // 25 монеток от центра токена
       const rect = e.target.getBoundingClientRect();
       const x = rect.left + rect.width / 2;
@@ -119,8 +107,8 @@
         c.style.setProperty('--dx', dx + 'px');
         c.style.setProperty('--dy', dy + 'px');
         c.style.setProperty('--rot', rot + 'deg');
-        c.style.left = (x - 30) + 'px';
-        c.style.top = (y - 30) + 'px';
+        c.style.left = (x - 10) + 'px';
+        c.style.top = (y - 10) + 'px';
         document.body.appendChild(c);
         setTimeout(() => c.remove(), 1400);
       }
@@ -138,5 +126,6 @@
   </script>
 </body>
 </html>
+
 
 
