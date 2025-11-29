@@ -1,114 +1,134 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>ART Token - Valgar</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+  <script src="https://unpkg.com/@tonconnect/ui@2.0.0/dist/tonconnect-ui.min.js"></script>
   <style>
-    body { margin:0; background: #000 url('background.jpg?t=171') center/cover no-repeat fixed; color: white; font-family: Arial; overflow: hidden; }
-    .balance { font-size: 38px; font-weight: bold; margin: 15px 0; color: #ffd700; text-shadow: 0 0 20px #ff5500; }
+    body { margin:0; background: url('background.jpg') center/cover no-repeat fixed, #000; color: white; font-family: Arial; overflow: hidden; }
+    .balance { font-size: 36px; font-weight: bold; margin: 20px 0; color: #ffd700; text-shadow: 0 0 20px #ff5500; }
+    
+    /* Персонаж Валгар */
+    #valgar { width: 90%; max-width: 500px; margin: 0 auto; pointer-events: none; animation: breathe 4s infinite; }
+    @keyframes breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+    .attack { animation: strike 0.6s ease-in-out !important; }
+    @keyframes strike { 0% { transform: translateY(0) rotate(0); } 40% { transform: translateY(-30px) rotate(-45deg); } 100% { transform: translateY(0) rotate(0); } }
 
-    .game-area { display: flex; align-items: center; justify-content: center; margin-top: 20px; position: relative; }
-    #valgar-lottie { width: 50%; pointer-events: none; }
-    #monster { width: 280px; height: 280px; background: url('monster.png') center/contain no-repeat; cursor: pointer; position: relative; z-index: 10; }
-    #monster.hit { animation: hit 0.4s; }
-    @keyframes hit { 0%,100% { transform: scale(1); } 50% { transform: scale(0.88); } }
+    /* Круглый токен */
+    #tokenCircle { width: 260px; height: 260px; margin: 20px auto; background: radial-gradient(#ffd700, #ff8c00); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 80px; box-shadow: 0 0 80px #ffd700; user-select: none; }
+    #tokenCircle:active { transform: scale(0.92); }
 
-    .energy { margin: 20px 0; font-size: 22px; font-weight: bold; }
-    .energy-bar { height: 30px; background: #111; border-radius: 15px; overflow: hidden; margin: 10px 20px; border: 3px solid #ffd700; }
-    .energy-fill { height: 100%; background: linear-gradient(90deg, #ff0000, #ffd700); }
+    /* Монетки */
+    .coin { position: absolute; font-size: 50px; pointer-events: none; z-index: 99; animation: fly 1.4s ease-out forwards; }
+    @keyframes fly { to { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 0; } }
 
-    .no-energy { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 32px; color: #ff0000; text-shadow: 0 0 30px #000; display: none; z-index: 20; }
+    .energy-bar { height: 26px; background: #111; border-radius: 13px; overflow: hidden; margin: 20px; border: 2px solid #ffd700; }
+    .energy-fill { height: 100%; background: linear-gradient(90deg, #ff0000, #ffd700); transition: width 0.3s; }
 
-    .tabs { position: fixed; bottom: 0; width: 100%; background: rgba(0,0,0,0.9); display: flex; padding: 18px 0; border-top: 3px solid #ffd700; }
-    .tab { flex: 1; text-align: center; font-size: 20px; font-weight: bold; color: #aaa; }
-    .tab.active { color: #ffd700; text-shadow: 0 0 20px #ff5500; transform: scale(1.15); }
+    /* Нижние вкладки */
+    .tabs { position: fixed; bottom: 0; width: 100%; background: rgba(0,0,0,0.8); display: flex; padding: 10px 0; backdrop-filter: blur(10px); }
+    .tab { flex: 1; text-align: center; padding: 12px; font-size: 14px; color: #aaa; transition: 0.3s; }
+    .tab.active { color: #ffd700; text-shadow: 0 0 10px #ff5500; }
+    .tab:active { transform: scale(0.95); }
 
-    .coin { position: absolute; font-size: 22px; color: #ffd700; text-shadow: 0 0 15px #ff5500; pointer-events: none; z-index: 99; }
+    .page { display: none; }
+    .page.active { display: block; }
   </style>
 </head>
 <body>
 
-  <div class="balance" id="balance">0.00 ART</div>
-
-  <div class="game-area">
-    <lottie-player id="valgar-lottie" src="valgar-animation.json" background="transparent" speed="1" loop autoplay></lottie-player>
-    <div id="monster"></div>
+  <div id="tapPage" class="page active">
+    <div class="balance" id="balance">0.00 ART</div>
+    <img src="valgar.jpg" id="valgar" alt="Valgar">
+    <div id="tokenCircle">ART</div>
+    
+    <div style="margin:20px 0">
+      <div>Энергия <span id="energyText">5000</span>/5000</div>
+      <div class="energy-bar"><div class="energy-fill" id="energyFill"></div></div>
+    </div>
   </div>
 
-  <div class="no-energy" id="noEnergy">No energy!<br>Wait for recharge ⚡</div>
+  <div id="shopPage" class="page">
+    <h2 style="margin-top:100px">Магазин бустов</h2>
+    <p style="font-size:18px; color:#aaa">Скоро здесь будут бусты, мульти-тапы, пассивка и т.д. 🔥</p>
+  </div>
 
-  <div class="energy">Energy: <span id="energyText">5000</span> ⚡</div>
-  <div class="energy-bar"><div class="energy-fill" id="energyFill"></div></div>
+  <div id="tasksPage" class="page">
+    <h2 style="margin-top:100px">Задания</h2>
+    <p style="font-size:18px; color:#aaa">Ежедневные задания, шифры, комбо — скоро здесь!</p>
+  </div>
 
   <div class="tabs">
-    <div class="tab active">⚔️ Tap</div>
-    <div class="tab">🏪 Shop</div>
-    <div class="tab">📜 Tasks</div>
+    <div class="tab active" onclick="openTab('tapPage')">⚔️ Tap</div>
+    <div class="tab" onclick="openTab('shopPage')">🏪 Магазин</div>
+    <div class="tab" onclick="openTab('tasksPage')">📜 Задания</div>
   </div>
 
   <script>
     const tg = window.Telegram.WebApp; tg.ready(); tg.expand();
     const userId = tg.initDataUnsafe.user?.id || 'test';
-    let data = JSON.parse(localStorage.getItem('art_valgar_lottie_' + userId)) || {points: 0, energy: 5000};
-
-    const lottiePlayer = document.getElementById('valgar-lottie');
-    const monster = document.getElementById('monster');
+    let data = JSON.parse(localStorage.getItem('art_valgar_' + userId)) || {points: 0, energy: 5000};
 
     function save() {
-      localStorage.setItem('art_valgar_lottie_' + userId, JSON.stringify(data));
+      localStorage.setItem('art_valgar_' + userId, JSON.stringify(data));
       document.getElementById('balance').textContent = data.points.toFixed(2) + ' ART';
-      document.getElementById('energyText').textContent = data.energy;
-      document.getElementById('energyFill').style.width = (data.energy / 5000 * 100) + '%';
-      document.getElementById('noEnergy').style.display = data.energy <= 0 ? 'block' : 'none';
-      monster.style.pointerEvents = data.energy <= 0 ? 'none' : 'auto';
-      monster.style.opacity = data.energy <= 0 ? '0.4' : '1';
+      document.getElementById('energyText').textContent = data.energy + '/5000';
+      document.getElementById('energyFill').style.width = (data.energy/5000*100) + '%';
     }
     save();
 
-    monster.addEventListener('click', tap);
-    monster.addEventListener('touchstart', tap);
+    // Переключение вкладок
+    function openTab(pageId) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.getElementById(pageId).classList.add('active');
+      document.querySelector(`.tab[onclick="openTab('${pageId}')"]`).classList.add('active');
+    }
+
+    // Тап по токену
+    document.getElementById('tokenCircle').addEventListener('touchstart', tap);
+    document.getElementById('tokenCircle').addEventListener('click', tap);
 
     function tap(e) {
       e.preventDefault();
-      if (data.energy <= 0) return;
+      if (data.energy <= 0) return tg.HapticFeedback.notificationOccurred('error');
 
       data.energy -= 1;
       data.points += 0.01;
       save();
 
-      // Запускаем анимацию удара (предполагаем, что в JSON есть маркер "attack")
-      lottiePlayer.playSegments([60, 120], true); // пример сегментов — подгоним под твой JSON
+      // Удар Валгара
+      const valgar = document.getElementById('valgar');
+      valgar.classList.add('attack');
+      setTimeout(() => valgar.classList.remove('attack'), 600);
 
-      // Чучело трясётся
-      monster.classList.add('hit');
-      setTimeout(() => monster.classList.remove('hit'), 400);
-
-      // Монетки $ART
-      const rect = monster.getBoundingClientRect();
+      // 25 монеток от центра токена
+      const rect = e.target.getBoundingClientRect();
       const x = rect.left + rect.width / 2;
       const y = rect.top + rect.height / 2;
-      for(let i = 0; i < 35; i++) {
+
+      for(let i = 0; i < 25; i++) {
         let c = document.createElement('div');
-        c.textContent = '$ART';
+        c.textContent = '🪙';
         c.classList.add('coin');
         let dx = (Math.random() - 0.5) * 600;
-        let dy = (Math.random() - 0.5) * 600 - 150;
+        let dy = (Math.random() - 0.5) * 600;
         let rot = Math.random() * 720 - 360;
-        c.style.left = (x - 25) + 'px';
-        c.style.top = (y - 25) + 'px';
-        c.style.transform = `translate(${dx}px, ${dy}px) rotate(${rot}deg)`;
-        c.style.opacity = 1;
+        c.style.setProperty('--dx', dx + 'px');
+        c.style.setProperty('--dy', dy + 'px');
+        c.style.setProperty('--rot', rot + 'deg');
+        c.style.left = (x - 30) + 'px';
+        c.style.top = (y - 30) + 'px';
         document.body.appendChild(c);
-        setTimeout(() => c.style.opacity = 0, 50);
-        setTimeout(() => c.remove(), 1300);
+        setTimeout(() => c.remove(), 1400);
       }
 
       tg.HapticFeedback.impactOccurred('heavy');
     }
 
+    // Восстановление энергии
     setInterval(() => {
       if (data.energy < 5000) {
         data.energy += 1;
