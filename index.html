@@ -1,114 +1,96 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>ART Token - Valgar</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    body { margin:0; background: url('background.jpg?t=169') center/cover no-repeat fixed; color: white; font-family: Arial; overflow: hidden; }
-    .balance { font-size: 36px; font-weight: bold; margin: 20px 0; color: #ffd700; text-shadow: 0 0 20px #ff5500; }
+    body { margin:0; background: url('background.jpg?t=170') center/cover no-repeat fixed; color: white; font-family: Arial; overflow: hidden; }
+    .balance { font-size: 38px; font-weight: bold; margin: 20px 0; color: #ffd700; text-shadow: 0 0 20px #ff5500; }
 
-    /* Валгар — одна картинка, живое дыхание + удар */
     #valgar { 
-      width: 92%; max-width: 520px; margin: 0 auto; pointer-events: none; 
-      animation: breathe 4s infinite ease-in-out;
+      width: 88%; max-width: 480px; margin: 20px auto 10px; pointer-events: none; 
+      animation: breathe 4s infinite ease-in-out; transition: all 0.2s;
     }
-    @keyframes breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.025); } }
+    @keyframes breathe { 0%,100% { transform: scale(1) rotate(0deg); } 50% { transform: scale(1.03); } }
     .striking { 
-      animation: strike 0.65s ease-in-out !important; 
+      animation: strike 0.7s ease-in-out !important; 
     }
     @keyframes strike { 
       0% { transform: scale(1) rotate(0deg); }
-      35% { transform: scale(1.12) rotate(-38deg) translateY(-20px); }
+      30% { transform: scale(1.15) rotate(-42deg) translateX(-30px); }
       100% { transform: scale(1) rotate(0deg); }
     }
 
-    #tokenCircle { 
-      width: 260px; height: 260px; margin: 30px auto; 
-      background: radial-gradient(#ffd700, #ff8c00); border-radius: 50%; 
-      display: flex; align-items: center; justify-content: center; 
-      font-size: 68px; font-weight: bold; color: #000; 
-      box-shadow: 0 0 90px #ffd700; user-select: none; position: relative; z-index: 10;
+    #monster { 
+      width: 220px; height: 220px; margin: 0 auto 30px; 
+      background: url('monster.png') center/contain no-repeat; 
+      cursor: pointer; position: relative; z-index: 10;
     }
-    #tokenCircle.disabled { opacity: 0.4; pointer-events: none; }
+    #monster.disabled { opacity: 0.4; pointer-events: none; }
+    #monster.hit { animation: hit 0.4s ease; }
+    @keyframes hit { 0%,100% { transform: scale(1); } 50% { transform: scale(0.9); } }
 
-    .energy { margin: 20px 0; font-size: 22px; font-weight: bold; }
-    .energy-bar { height: 28px; background: #111; border-radius: 14px; overflow: hidden; margin: 10px 20px; border: 3px solid #ffd700; }
+    .energy { margin: 15px 0; font-size: 22px; font-weight: bold; }
+    .energy-bar { height: 30px; background: #111; border-radius: 15px; overflow: hidden; margin: 10px 20px; border: 3px solid #ffd700; }
     .energy-fill { height: 100%; background: linear-gradient(90deg, #ff0000, #ffd700); transition: width 0.3s; }
 
     .no-energy { 
-      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-      font-size: 36px; font-weight: bold; color: #ff0000; text-shadow: 0 0 30px #000; 
-      z-index: 20; display: none; animation: pulse 1.5s infinite; 
+      position: absolute; top: 55%; left: 50%; transform: translate(-50%, -50%); 
+      font-size: 32px; font-weight: bold; color: #ff0000; text-shadow: 0 0 30px #000; 
+      z-index: 20; display: none; 
     }
-    @keyframes pulse { 0%,100% { opacity: 0.7; } 50% { opacity: 1; } }
 
-    .tabs { position: fixed; bottom: 0; width: 100%; background: rgba(0,0,0,0.85); display: flex; padding: 10px 0; backdrop-filter: blur(12px); }
-    .tab { flex: 1; text-align: center; padding: 14px; font-size: 15px; color: #aaa; transition: 0.3s; }
-    .tab.active { color: #ffd700; text-shadow: 0 0 15px #ff5500; }
+    .tabs { position: fixed; bottom: 0; width: 100%; background: rgba(0,0,0,0.9); display: flex; padding: 16px 0; backdrop-filter: blur(15px); border-top: 2px solid #ffd700; }
+    .tab { flex: 1; text-align: center; font-size: 18px; font-weight: bold; color: #aaa; transition: 0.3s; }
+    .tab.active { color: #ffd700; text-shadow: 0 0 15px #ff5500; transform: scale(1.1); }
 
-    .page { display: none; }
-    .page.active { display: block; }
-
-    /* Монетки $ART маленькие желтые */
-    .coin { position: absolute; font-size: 22px; font-weight: bold; color: #ffd700; text-shadow: 0 0 15px #ff5500; pointer-events: none; z-index: 99; }
+    .coin { position: absolute; font-size: 20px; font-weight: bold; color: #ffd700; text-shadow: 0 0 12px #ff5500; pointer-events: none; z-index: 99; }
   </style>
 </head>
 <body>
 
-  <div id="tapPage" class="page active">
-    <div class="balance" id="balance">0.00 ART</div>
-    <img src="valgar.png" id="valgar" alt="Valgar">
-    <div id="tokenCircle">$ART</div>
-    <div class="no-energy" id="noEnergy">Нет энергии!<br>Жди восстановления ⚡</div>
-    
-    <div class="energy">Энергия: <span id="energyText">5000</span> ⚡</div>
-    <div class="energy-bar"><div class="energy-fill" id="energyFill"></div></div>
-  </div>
-
-  <div id="shopPage" class="page"><h2 style="margin-top:120px;color:#ffd700">Магазин бустов<br><small style="color:#aaa">Скоро здесь будут мульти-тапы и пассивка</small></h2></div>
-  <div id="tasksPage" class="page"><h2 style="margin-top:120px;color:#ffd700">Задания<br><small style="color:#aaa">Ежедневные комбо и шифры — скоро!</small></h2></div>
+  <div class="balance" id="balance">0.00 ART</div>
+  <img src="valgar.png" id="valgar" alt="Valgar">
+  <div id="monster"></div>
+  <div class="no-energy" id="noEnergy">No energy!<br>Wait for recharge ⚡</div>
+  
+  <div class="energy">Energy: <span id="energyText">5000</span> ⚡</div>
+  <div class="energy-bar"><div class="energy-fill" id="energyFill"></div></div>
 
   <div class="tabs">
-    <div class="tab active" onclick="openTab('tapPage')">⚔️ Tap</div>
-    <div class="tab" onclick="openTab('shopPage')">🏪 Магазин</div>
-    <div class="tab" onclick="openTab('tasksPage')">📜 Задания</div>
+    <div class="tab active" onclick="openTab('tap')">⚔️ Tap</div>
+    <div class="tab" onclick="openTab('shop')">🏪 Shop</div>
+    <div class="tab" onclick="openTab('tasks')">📜 Tasks</div>
   </div>
 
   <script>
     const tg = window.Telegram.WebApp; tg.ready(); tg.expand();
     const userId = tg.initDataUnsafe.user?.id || 'test';
-    let data = JSON.parse(localStorage.getItem('art_valgar_final_' + userId)) || {points: 0, energy: 5000};
+    let data = JSON.parse(localStorage.getItem('art_valgar_en_' + userId)) || {points: 0, energy: 5000};
 
     function save() {
-      localStorage.setItem('art_valgar_final_' + userId, JSON.stringify(data));
+      localStorage.setItem('art_valgar_en_' + userId, JSON.stringify(data));
       document.getElementById('balance').textContent = data.points.toFixed(2) + ' ART';
       document.getElementById('energyText').textContent = data.energy;
       document.getElementById('energyFill').style.width = (data.energy / 5000 * 100) + '%';
       
       const noEnergy = document.getElementById('noEnergy');
-      const tokenCircle = document.getElementById('tokenCircle');
+      const monster = document.getElementById('monster');
       if (data.energy <= 0) {
         noEnergy.style.display = 'block';
-        tokenCircle.classList.add('disabled');
+        monster.classList.add('disabled');
       } else {
         noEnergy.style.display = 'none';
-        tokenCircle.classList.remove('disabled');
+        monster.classList.remove('disabled');
       }
     }
     save();
 
-    function openTab(pageId) {
-      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      document.getElementById(pageId).classList.add('active');
-      document.querySelector(`.tab[onclick="openTab('${pageId}')"]`).classList.add('active');
-    }
-
-    const tokenCircle = document.getElementById('tokenCircle');
+    const monster = document.getElementById('monster');
     const valgar = document.getElementById('valgar');
-    ['touchstart', 'click'].forEach(ev => tokenCircle.addEventListener(ev, tap));
+    ['touchstart', 'click'].forEach(ev => monster.addEventListener(ev, tap));
 
     function tap(e) {
       e.preventDefault();
@@ -118,12 +100,16 @@
       data.points += 0.01;
       save();
 
-      // Удар Валгара
+      // Удар Валгара (улучшенный поворот боком)
       valgar.classList.add('striking');
-      setTimeout(() => valgar.classList.remove('striking'), 650);
+      setTimeout(() => valgar.classList.remove('striking'), 700);
 
-      // 30 маленьких желтых $ART монеток
-      const rect = tokenCircle.getBoundingClientRect();
+      // Чучело трясётся
+      monster.classList.add('hit');
+      setTimeout(() => monster.classList.remove('hit'), 400);
+
+      // 30 маленьких $ART монеток
+      const rect = monster.getBoundingClientRect();
       const x = rect.left + rect.width / 2;
       const y = rect.top + rect.height / 2;
 
@@ -131,23 +117,21 @@
         let c = document.createElement('div');
         c.textContent = '$ART';
         c.classList.add('coin');
-        let dx = (Math.random() - 0.5) * 600;
-        let dy = (Math.random() - 0.5) * 600 - 100;
+        let dx = (Math.random() - 0.5) * 550;
+        let dy = (Math.random() - 0.5) * 550 - 100;
         let rot = Math.random() * 720 - 360;
         c.style.left = (x - 20) + 'px';
         c.style.top = (y - 20) + 'px';
         c.style.transform = `translate(${dx}px, ${dy}px) rotate(${rot}deg)`;
         c.style.opacity = 1;
-        c.style.transition = 'all 1.3s ease-out';
         document.body.appendChild(c);
-        setTimeout(() => { c.style.opacity = 0; }, 50);
+        setTimeout(() => c.style.opacity = 0, 50);
         setTimeout(() => c.remove(), 1300);
       }
 
       tg.HapticFeedback.impactOccurred('heavy');
     }
 
-    // Восстановление энергии
     setInterval(() => {
       if (data.energy < 5000) {
         data.energy += 1;
