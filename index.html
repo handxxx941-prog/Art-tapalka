@@ -8,16 +8,16 @@
   <script src="https://unpkg.com/@tonconnect/ui@2.0.0/dist/tonconnect-ui.min.js"></script>
   <style>
     body { margin:0; background: #000; color: white; font-family: Arial; text-align: center; overflow: hidden; }
-    .balance { font-size: 40px; font-weight: bold; margin: 30px 0; color: #ffd700; text-shadow: 0 0 20px #ff5500; }
-    #valgar { width: 90%; max-width: 380px; margin: 20px auto; border-radius: 20px; box-shadow: 0 0 80px #ff5500; }
-    .striking { animation: strike 0.6s ease; }
-    @keyframes strike { 0%{transform:rotate(0)} 30%{transform:rotate(28deg) scale(1.12)} 100%{transform:rotate(0)} }
-    .coin { position: absolute; font-size: 50px; pointer-events: none; z-index: 99; animation: fly 1.3s ease-out forwards; }
+    .balance { font-size: 40px; font-weight: bold; margin: 30px 0; color: #ffd700; text-shadow: 0 0 30px #ff5500; }
+    #valgar { width: 90%; max-width: 420px; margin: 20px auto; border-radius: 20px; box-shadow: 0 0 100px #ff5500; user-select: none; pointer-events: auto; }
+    .striking { animation: strike 0.7s ease-in-out; }
+    @keyframes strike { 0%{transform:rotate(0)} 25%{transform:rotate(32deg) scale(1.15)} 100%{transform:rotate(0)} }
+    .coin { position: absolute; font-size: 48px; pointer-events: none; z-index: 999; animation: fly 1.4s ease-out forwards; }
     @keyframes fly { to { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 0; } }
-    .plus { position: absolute; font-size: 48px; font-weight: bold; color: #ffd700; text-shadow: 0 0 20px #ff0000; pointer-events: none; animation: up 1s forwards; }
-    @keyframes up { to { transform: translateY(-200px); opacity: 0; } }
+    .plus { position: absolute; font-size: 64px; font-weight: bold; color: #ffd700; text-shadow: 0 0 30px #ff0000; pointer-events: none; z-index: 999; animation: up 1.2s forwards; }
+    @keyframes up { to { transform: translateY(-250px) scale(1.5); opacity: 0; } }
     button { background: linear-gradient(#ff5500, #ffd700); color: #000; padding: 18px 36px; border-radius: 50px; font-size: 20px; margin: 10px; font-weight: bold; border: none; }
-    .energy-bar { height: 28px; background: #111; border-radius: 14px; overflow: hidden; margin: 20px; border: 3px solid #ffd700; }
+    .energy-bar { height: 28px; background: #111; border-radius: 14px; overflow: hidden; margin: 20px 0; border: 3px solid #ffd700; }
     .energy-fill { height: 100%; background: linear-gradient(90deg, #ff0000, #ffd700); transition: width 0.3s; }
   </style>
 </head>
@@ -30,77 +30,92 @@
   </div>
   <button id="connectWallet">Подключить TON</button>
   <button id="claimBtn">Claim (скоро TGE)</button>
-  <button id="dailyCombo">Daily Combo (+5M)</button>
+  <button id="dailyCombo">Daily Combo (+10M)</button>
 
   <script>
     const tg = window.Telegram.WebApp; tg.ready(); tg.expand();
     const userId = tg.initDataUnsafe.user?.id || 'test';
     let data = JSON.parse(localStorage.getItem('valgar_' + userId)) || {points: 0, energy: 3000, lastDaily: 0};
 
-    const tonConnectUI = new TonConnectUI({manifestUrl: location.origin + '/tonconnect-manifest.json'});
-
     function save() {
       localStorage.setItem('valgar_' + userId, JSON.stringify(data));
-      document.getElementById('balance').textContent = Math.floor(data.points).toLocaleString() + ' ART';
+      document.getElementById('balance').textContent = Math.floor(data.points).toLocaleString('ru-RU') + ' ART';
       document.getElementById('energyText').textContent = data.energy + '/3000';
       document.getElementById('energyFill').style.width = (data.energy/3000*100) + '%';
     }
     save();
 
-    document.getElementById('valgar').addEventListener('touchstart', function(e) {
-      if (data.energy <= 0) return;
-      data.energy -= 1; data.points += 1; save();
+    const valgar = document.getElementById('valgar');
+    ['touchstart', 'click', 'pointerdown'].forEach(ev => {
+      valgar.addEventListener(ev, function(e) {
+        e.preventDefault();
+        if (data.energy <= 0) {
+          tg.HapticFeedback.notificationOccurred('error');
+          return;
+        }
+        data.energy -= 1;
+        data.points += 1;
+        save();
 
-      this.classList.add('striking');
-      setTimeout(() => this.classList.remove('striking'), 600);
+        // Удар Валгара
+        valgar.classList.add('striking');
+        setTimeout(() => valgar.classList.remove('striking'), 700);
 
-      const x = e.touches[0].clientX;
-      const y = e.touches[0].clientY;
+        const rect = valgar.getBoundingClientRect();
+        const x = e.touches ? e.touches[0].clientX : e.clientX;
+        const y = e.touches ? e.touches[0].clientY : e.clientY;
 
-      // +1 ART
-      let plus = document.createElement('div');
-      plus.textContent = '+1 ART';
-      plus.classList.add('plus');
-      plus.style.left = (x-60) + 'px';
-      plus.style.top = (y-100) + 'px';
-      document.body.appendChild(plus);
-      setTimeout(() => plus.remove(), 1000);
+        // +1 ART огромный
+        let plus = document.createElement('div');
+        plus.textContent = '+1 ART';
+        plus.classList.add('plus');
+        plus.style.left = (x - 80) + 'px';
+        plus.style.top = (y - 100) + 'px';
+        document.body.appendChild(plus);
+        setTimeout(() => plus.remove(), 1200);
 
-      // 14 разлетающихся монеток
-      for(let i=0; i<14; i++) {
-        let c = document.createElement('div');
-        c.textContent = '🪙';
-        c.classList.add('coin');
-        let dx = (Math.random()-0.5)*400;
-        let dy = -200 - Math.random()*200;
-        let rot = Math.random()*720 - 360;
-        c.style.setProperty('--dx', dx+'px');
-        c.style.setProperty('--dy', dy+'px');
-        c.style.setProperty('--rot', rot+'deg');
-        c.style.left = (x-30)+'px';
-        c.style.top = (y-30)+'px';
-        document.body.appendChild(c);
-        setTimeout(() => c.remove(), 1300);
-      }
+        // 20 монеток с бешеным спином
+        for(let i = 0; i < 20; i++) {
+          let c = document.createElement('div');
+          c.textContent = '🪙';
+          c.classList.add('coin');
+          let dx = (Math.random() - 0.5) * 500;
+          let dy = -200 - Math.random() * 400;
+          let rot = Math.random() * 1440 - 720;
+          c.style.setProperty('--dx', dx + 'px');
+          c.style.setProperty('--dy', dy + 'px');
+          c.style.setProperty('--rot', rot + 'deg');
+          c.style.left = (x - 30) + 'px';
+          c.style.top = (y - 30) + 'px';
+          document.body.appendChild(c);
+          setTimeout(() => c.remove(), 1400);
+        }
 
-      tg.HapticFeedback.impactOccurred('heavy');
+        tg.HapticFeedback.impactOccurred('heavy');
+      });
     });
 
-    setInterval(() => { if(data.energy < 3000) {data.energy +=1; save();} }, 1000);
+    // Восстановление энергии
+    setInterval(() => {
+      if (data.energy < 3000) {
+        data.energy += 1;
+        save();
+      }
+    }, 1000);
 
+    // Daily Combo
     document.getElementById('dailyCombo').onclick = () => {
       const today = Math.floor(Date.now()/86400000);
-      if(data.lastDaily !== today) {
-        data.points += 5000000;
+      if (data.lastDaily !== today) {
+        data.points += 10000000;
         data.lastDaily = today;
-        alert('Валгар дал силу! +5.000.000 ART');
+        alert('Валгар дал силу! +10.000.000 ART 🔥');
         save();
-      } else alert('Уже забрал сегодня!');
+      } else alert('Уже забрал сегодня, воин!');
     };
 
     document.getElementById('connectWallet').onclick = () => tonConnectUI.openModal();
-    document.getElementById('claimBtn').onclick = () => alert('Ты в ферминге! ' + data.points.toLocaleString() + ' ART будет на TGE');
+    document.getElementById('claimBtn').onclick = () => alert('Ты в ферминге! ' + data.points.toLocaleString('ru-RU') + ' ART будет на TGE');
   </script>
 </body>
 </html>
-
